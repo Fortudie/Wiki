@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Web;
+using NUnit.Framework;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using Wiki.Pages;
@@ -37,7 +39,11 @@ namespace Wiki
             return driver;
         }
 
-
+        /// <summary>
+        /// Выполнить прохождение по первым ссылкам статей википедии пока не дойдем до статьи с целевым наименованием
+        /// </summary>
+        /// <param name="driver"></param>
+        /// <param name="targetArticleName"></param>
         public static void CheckFollowingLinkQuantity(IWebDriver driver, string targetArticleName)
         {
             //Загружаем модель экрана со статьей
@@ -66,6 +72,46 @@ namespace Wiki
                 counter++;
                 //Делаем запись в лог
                 var logString = $"Шаг {counter} - {contentPage.ContentHeader.Text} - {driver.Url}";
+                logList.Add(logString);
+                //Кликаем на первую ссылку в данных статьи
+                contentPage = new ContentPage(driver);
+                contentPage.GetFirstArticleLink().Click();
+            }
+
+            //Записать результат в файл
+            File.WriteAllLines("report.txt", logList);
+        }
+
+        [Test]
+        public void Test1()
+        {
+            var driver = Init();
+            //Загружаем модель экрана со статьей
+            var contentPage = new ContentPage(driver);
+            //Инициализируем набор записей для логирования
+            var logList = new List<string>();
+            //Создаем переменную - счетчик
+            var counter = 0;
+            //Кликаем гиперссылку Случайная страница для старта последовательности
+            var leftBarElements = new LeftBarElements(driver);
+            leftBarElements.RandomPageLink.Click();
+
+            //Делаем запись в логе в случае попадания на первую страницу - целевую
+            if (contentPage.ContentHeader.Text == "Философия")
+            {
+                var logString = $"Шаг {counter} - {contentPage.ContentHeader.Text} - {driver.Url}";
+                logList.Add(logString);
+                File.WriteAllLines("report.txt", logList);
+                return;
+            }
+
+            //В цикле выполняем переходы до попадания на целевую страницу
+            while (contentPage.ContentHeader.Text != "Философия")
+            {
+                //Увеличиваем значение счетчика
+                counter++;
+                //Делаем запись в лог
+                var logString = $"Шаг {counter} - {contentPage.ContentHeader.Text} - {HttpUtility.UrlDecode(driver.Url)}";
                 logList.Add(logString);
                 //Кликаем на первую ссылку в данных статьи
                 contentPage = new ContentPage(driver);
